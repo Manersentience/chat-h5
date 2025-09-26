@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>灵感源</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f8ff; /* 淡蓝背景 */
+      margin: 0;
+      padding: 0;
+    }
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      justify-content: space-between;
+    }
+    .messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: scroll; /* 显示右侧滚动条 */
+      scrollbar-width: thin; /* 火狐 */
+    }
+    .messages::-webkit-scrollbar {
+      width: 6px; /* 滚动条宽度 */
+    }
+    .messages::-webkit-scrollbar-thumb {
+      background: #4682b4; /* 海水蓝滚动条 */
+      border-radius: 3px;
+    }
+    .messages::-webkit-scrollbar-track {
+      background: #e6f2fa;
+    }
+    .message {
+      max-width: 70%;
+      margin: 8px 0;
+      padding: 10px 15px;
+      border-radius: 10px;
+      word-wrap: break-word;
+      line-height: 1.4;
+      cursor: pointer;
+      -webkit-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
+    .message.left {
+      background-color: #4682b4; /* 海水蓝 */
+      color: #fff;
+      align-self: flex-start;
+    }
+    .message.right {
+      background-color: #ffffff; /* 白色 */
+      border: 1px solid #ddd;
+      color: #333;
+      align-self: flex-end;
+    }
+    .input-area {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ddd;
+      background-color: #fff;
+      align-items: center;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    .input-area button {
+      margin-left: 8px;
+      padding: 8px 12px;
+      background-color: #4682b4; /* 海水蓝按钮 */
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .voice-btn {
+      margin-left: 8px;
+      padding: 8px 12px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .voice-btn:active {
+      background-color: #ddd;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <input type="text" id="inputText" placeholder="请输入要发送的内容..." />
+      <button onclick="sendMessage()">发送</button>
+      <button class="voice-btn" 
+              onmousedown="startVoice()" 
+              onmouseup="endVoice()">
+        长按语音
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const messages = document.getElementById("messages");
+    const input = document.getElementById("inputText");
+    const STORAGE_KEY = "chat_history";
+
+    // 页面加载时恢复历史
+    window.onload = function() {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      saved.forEach(msg => renderMessage(msg.text, msg.type, false));
+    };
+
+    // 渲染消息
+    function renderMessage(text, type, save = true) {
+      const msg = document.createElement("div");
+      msg.className = "message " + type;
+      msg.textContent = text;
+
+      // 长按复制
+      msg.addEventListener("contextmenu", function(e) {
+        e.preventDefault();
+        copyToClipboard(text);
+        alert("已复制: " + text);
+      });
+
+      messages.appendChild(msg);
+      messages.scrollTop = messages.scrollHeight;
+
+      if (save) {
+        saveMessage(text, type);
+      }
+    }
+
+    // 保存消息（只保留最近16条）
+    function saveMessage(text, type) {
+      let saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      saved.push({ text, type });
+      if (saved.length > 16) {
+        saved = saved.slice(saved.length - 16);
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+    }
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (text !== "") {
+        renderMessage(text, "right", true);
+        input.value = "";
+      }
+    }
+
+    function startVoice() {
+      renderMessage("[语音录制中...]", "right", true);
+    }
+
+    function endVoice() {
+      const last = messages.lastChild;
+      if (last && last.textContent === "[语音录制中...]") {
+        last.textContent = "[语音消息]";
+        saveMessage("[语音消息]", "right");
+      }
+    }
+
+    function copyToClipboard(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+  </script>
+</body>
+</html>
